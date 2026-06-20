@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from app.database import get_db
 from app.models.user import User
 from app.models.note import Note
-from app.schemas.note import NoteResponse, NoteCreate
+from app.schemas.note import NoteResponse, NoteCreate, NoteUpdate
 from app.services.auth_service import get_current_user
 
 router = APIRouter(prefix="/notes", tags=["notes"])
@@ -33,3 +33,31 @@ def create_note(
     db.refresh(new_note)
 
     return new_note
+
+@router.put("/{note_id}", response_model=NoteResponse)
+def update_note(
+    note_id: int,
+    note_data: NoteUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    note = db.query(Note).filter(
+        Note.id == note_id,
+        Note.user_id == current_user.id
+    ).first()
+
+    if not note:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Note not found"
+        )
+
+    if note_data.title is not None:
+        note.title = note_data.title
+    if note_data.content is not None:
+        note.content = note_data.content
+
+    db.commit()
+    db.refresh(note)
+
+    return note
