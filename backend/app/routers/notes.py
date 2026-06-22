@@ -6,6 +6,7 @@ from app.models.user import User
 from app.models.note import Note
 from app.schemas.note import NoteResponse, NoteCreate, NoteUpdate
 from app.services.auth_service import get_current_user
+from app import vector_store
 
 router = APIRouter(prefix="/notes", tags=["notes"])
 
@@ -32,6 +33,9 @@ def create_note(
     db.commit()
     db.refresh(new_note)
 
+    text = f"{new_note.title} {new_note.content or ''}"
+    vector_store.add_note(new_note.id, text, current_user.id)
+
     return new_note
 
 @router.put("/{note_id}", response_model=NoteResponse)
@@ -47,10 +51,7 @@ def update_note(
     ).first()
 
     if not note:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Note not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
 
     if note_data.title is not None:
         note.title = note_data.title
@@ -59,6 +60,9 @@ def update_note(
 
     db.commit()
     db.refresh(note)
+
+    text = f"{note.title} {note.content or ''}"
+    vector_store.add_note(note.id, text, current_user.id)
 
     return note
 
@@ -74,12 +78,11 @@ def delete_note(
     ).first()
 
     if not note:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Note not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
 
     db.delete(note)
     db.commit()
+
+    vector_store.delete_note(note_id)
 
     return {"message": "Note deleted successfully"}
