@@ -22,9 +22,11 @@ Aplicación de segundo cerebro personal con inteligencia artificial. Permite gua
 - [x] Autenticación completa con JWT (registro, login, rutas protegidas)
 - [x] CRUD de notas protegido por usuario
 - [x] Integración con ChromaDB para búsqueda semántica
-- [ ] Chat RAG con Groq (Llama 3.3 70B)
-- [ ] Procesado de PDFs y URLs
-- [ ] Frontend completo
+- [x] Chat RAG con Groq (Llama 3.3 70B)
+- [x] Streaming SSE para respuestas en tiempo real
+- [x] Procesado de PDFs y URLs
+- [ ] Tests con pytest
+- [ ] Frontend completo (Next.js + TypeScript)
 - [ ] Deploy en producción
 
 ## Desarrollo local
