@@ -2,7 +2,7 @@ from passlib.context import CryptContext
 from datetime import datetime, timedelta
 from jose import jwt, JWTError
 from app.config import settings
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Cookie
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from app.database import get_db
@@ -34,15 +34,16 @@ def decode_access_token(token: str) -> dict | None:
 
 http_bearer = HTTPBearer()
 
-def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(http_bearer), db: Session = Depends(get_db)) -> User:
-    token = credentials.credentials
+def get_current_user(access_token: str | None = Cookie(default=None), db: Session = Depends(get_db)) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
     )
 
-    payload = decode_access_token(token)
+    if access_token is None:
+        raise credentials_exception
+
+    payload = decode_access_token(access_token)
     if payload is None:
         raise credentials_exception
 
