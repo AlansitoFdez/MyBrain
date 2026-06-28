@@ -19,6 +19,8 @@ export default function DashboardPage() {
   const [chatLoading, setChatLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [urlInput, setUrlInput] = useState("")
+  const [showUrlInput, setShowUrlInput] = useState(false)
 
   const fetchNotes = async () => {
     const response = await api.get<Note[]>("/notes/");
@@ -29,6 +31,29 @@ export default function DashboardPage() {
     const response = await api.get<Document[]>("/documents/");
     setDocuments(response.data);
   };
+
+  const uploadUrl = async () => {
+    if (!urlInput.trim()) return
+    const formData = new FormData()
+    formData.append("url", urlInput)
+    await api.post("/documents/url", formData, {
+      headers: { "Content-Type": "multipart/form-data" }
+    })
+    setUrlInput("")
+    setShowUrlInput(false)
+    fetchDocuments()
+  }
+  
+  const uploadPdf = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const formData = new FormData()
+    formData.append("file", file)
+    await api.post("/documents/pdf", formData, {
+      headers: { "Content-Type": "multipart/form-data" }
+    })
+    fetchDocuments()
+  }
 
   useEffect(() => {
     fetchNotes();
@@ -99,72 +124,98 @@ export default function DashboardPage() {
   return (
     <div className="flex w-full h-screen">
       {/* SIDEBAR */}
-      <div className="w-64 bg-white border-r border-slate-200 flex flex-col">
-        <div className="p-4 border-b border-slate-200">
-          <h1 className="font-semibold text-slate-900">MyBrain</h1>
-        </div>
+<div className="w-64 bg-white border-r border-slate-200 flex flex-col">
+  <div className="p-4 border-b border-slate-200">
+    <h1 className="font-semibold text-slate-900">MyBrain</h1>
+  </div>
 
-        <div className="flex-1 overflow-y-auto p-3">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">
-              Notas
-            </span>
-            <button
-              onClick={createNote}
-              className="text-emerald-500 hover:text-emerald-600 text-lg font-light"
-            >
-              +
-            </button>
-          </div>
+  <div className="flex-1 overflow-y-auto p-3">
+    <div className="flex items-center justify-between mb-2">
+      <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+        Notas
+      </span>
+      <button
+        onClick={createNote}
+        className="text-emerald-500 hover:text-emerald-600 text-lg font-light"
+      >
+        +
+      </button>
+    </div>
 
-          {notes.map((note) => (
-            <button
-              key={note.id}
-              onClick={() => selectNote(note)}
-              className={`w-full text-left px-3 py-2 rounded-lg text-sm mb-1 transition-colors ${
-                selectedNote?.id === note.id
-                  ? "bg-emerald-50 text-emerald-700"
-                  : "text-slate-600 hover:bg-slate-50"
-              }`}
-            >
-              {note.title}
-            </button>
-          ))}
+    {notes.map((note) => (
+      <button
+        key={note.id}
+        onClick={() => selectNote(note)}
+        className={`w-full text-left px-3 py-2 rounded-lg text-sm mb-1 transition-colors ${
+          selectedNote?.id === note.id
+            ? "bg-emerald-50 text-emerald-700"
+            : "text-slate-600 hover:bg-slate-50"
+        }`}
+      >
+        {note.title}
+      </button>
+    ))}
 
-          {documents.length > 0 && (
-            <>
-              <div className="mt-4 mb-2">
-                <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">
-                  Documentos
-                </span>
-              </div>
-              {documents.map((doc) => (
-                <div
-                  key={doc.id}
-                  className="px-3 py-2 text-sm text-slate-500 truncate"
-                >
-                  {doc.source_type === "pdf" ? "📄" : "🌐"} {doc.title}
-                </div>
-              ))}
-            </>
-          )}
-        </div>
-
-        <div className="p-3 border-t border-slate-200 space-y-1">
-          <button
-            onClick={() => setChatOpen(!chatOpen)}
-            className="w-full text-left px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
-          >
-            💬 Chat con MyBrain
-          </button>
-          <button
-            onClick={logout}
-            className="w-full text-left px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-50 transition-colors"
-          >
-            Cerrar sesión
-          </button>
-        </div>
+    <div className="mt-4 mb-2 flex items-center justify-between">
+      <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Documentos</span>
+      <div className="flex gap-1">
+        <label className="text-slate-400 hover:text-slate-600 cursor-pointer text-sm" title="Subir PDF">
+          📄
+          <input type="file" accept=".pdf" className="hidden" onChange={uploadPdf} />
+        </label>
+        <button
+          onClick={() => setShowUrlInput(!showUrlInput)}
+          className="text-slate-400 hover:text-slate-600 text-sm"
+          title="Añadir URL"
+        >
+          🌐
+        </button>
       </div>
+    </div>
+
+    {showUrlInput && (
+      <div className="mb-2 flex gap-1">
+        <input
+          value={urlInput}
+          onChange={(e) => setUrlInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && uploadUrl()}
+          className="flex-1 px-2 py-1 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          placeholder="https://..."
+        />
+        <button
+          onClick={uploadUrl}
+          className="px-2 py-1 bg-emerald-500 text-white text-xs rounded-lg"
+        >
+          →
+        </button>
+      </div>
+    )}
+
+    {documents.map((doc) => (
+      <div
+        key={doc.id}
+        className="px-3 py-2 text-sm text-slate-500 truncate"
+      >
+        {doc.source_type === "pdf" ? "📄" : "🌐"} {doc.title}
+      </div>
+    ))}
+  </div>
+
+  <div className="p-3 border-t border-slate-200 space-y-1">
+    <button
+      onClick={() => setChatOpen(!chatOpen)}
+      className="w-full text-left px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+    >
+      💬 Chat con MyBrain
+    </button>
+    <button
+      onClick={logout}
+      className="w-full text-left px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-50 transition-colors"
+    >
+      Cerrar sesión
+    </button>
+  </div>
+</div>
 
       {/* EDITOR */}
       <div className="flex-1 flex flex-col">
