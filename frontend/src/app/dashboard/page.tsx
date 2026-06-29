@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Note, Document } from "@/types";
 import { logout } from "@/lib/auth";
 import api from "@/lib/api";
@@ -23,6 +23,9 @@ export default function DashboardPage() {
   const [urlInput, setUrlInput] = useState("");
   const [showUrlInput, setShowUrlInput] = useState(false);
   const chatBottomRef = useRef<HTMLDivElement>(null);
+  const [autoSaveTimer, setAutoSaveTimer] = useState<ReturnType<
+    typeof setTimeout
+  > | null>(null);
 
   const fetchNotes = async () => {
     const response = await api.get<Note[]>("/notes");
@@ -63,8 +66,8 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    chatBottomRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [chatMessages])
+    chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatMessages]);
 
   const createNote = async () => {
     const response = await api.post<Note>("/notes", {
@@ -94,6 +97,30 @@ export default function DashboardPage() {
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
+
+  const handleContentChange = useCallback(
+    (value: string) => {
+      setContent(value);
+      if (autoSaveTimer) clearTimeout(autoSaveTimer);
+      if (!selectedNote) return;
+      const timer = setTimeout(async () => {
+        setSaving(true);
+        const response = await api.put<Note>(`/notes/${selectedNote.id}`, {
+          title,
+          content: value,
+        });
+        setNotes((prev) =>
+          prev.map((n) => (n.id === selectedNote.id ? response.data : n)),
+        );
+        setSelectedNote(response.data);
+        setSaving(false);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      }, 1500);
+      setAutoSaveTimer(timer);
+    },
+    [autoSaveTimer, selectedNote, title],
+  );
 
   const deleteNote = async () => {
     if (!selectedNote) return;
@@ -301,7 +328,7 @@ export default function DashboardPage() {
             </div>
             <textarea
               value={content}
-              onChange={(e) => setContent(e.target.value)}
+              onChange={(e) => handleContentChange(e.target.value)}
               className="flex-1 p-6 text-slate-700 bg-transparent focus:outline-none resize-none text-sm leading-relaxed"
               placeholder="Escribe aquí el contenido de tu nota..."
             />
@@ -359,9 +386,7 @@ export default function DashboardPage() {
                   {msg.role === "user" ? (
                     msg.content
                   ) : (
-                    <ReactMarkdown>
-                      {msg.content}
-                    </ReactMarkdown>
+                    <ReactMarkdown>{msg.content}</ReactMarkdown>
                   )}
                 </div>
               </div>
