@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Note, Document } from "@/types";
 import { logout } from "@/lib/auth";
 import api from "@/lib/api";
+import ReactMarkdown from "react-markdown";
 
 export default function DashboardPage() {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -12,7 +13,9 @@ export default function DashboardPage() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [chatOpen, setChatOpen] = useState(false);
-  const [chatMessages, setChatMessages] = useState<{ role: string; content: string }[]>([]);
+  const [chatMessages, setChatMessages] = useState<
+    { role: string; content: string }[]
+  >([]);
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -97,15 +100,15 @@ export default function DashboardPage() {
   };
 
   const sendMessage = async () => {
-    if (!chatInput.trim()) return
-    const userMessage = chatInput
-    setChatInput("")
+    if (!chatInput.trim()) return;
+    const userMessage = chatInput;
+    setChatInput("");
     setChatMessages((prev: { role: string; content: string }[]) => [
       ...prev,
       { role: "user", content: userMessage },
-    ])
-    setChatLoading(true)
-  
+    ]);
+    setChatLoading(true);
+
     try {
       const response = await fetch("http://localhost:8000/chat/stream", {
         method: "POST",
@@ -114,38 +117,43 @@ export default function DashboardPage() {
         },
         credentials: "include",
         body: JSON.stringify({ query: userMessage }),
-      })
-  
-      const reader = response.body!.getReader()
-      const decoder = new TextDecoder()
-      let assistantMessage = ""
-  
+      });
+
+      const reader = response.body!.getReader();
+      const decoder = new TextDecoder();
+      let assistantMessage = "";
+
       setChatMessages((prev: { role: string; content: string }[]) => [
         ...prev,
         { role: "assistant", content: "" },
-      ])
-  
+      ]);
+
       while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-  
-        const chunk = decoder.decode(value)
-        const lines = chunk.split("\n").filter(line => line.startsWith("data: "))
-  
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk
+          .split("\n")
+          .filter((line) => line.startsWith("data: "));
+
         for (const line of lines) {
-          const data = JSON.parse(line.replace("data: ", ""))
+          const data = JSON.parse(line.replace("data: ", ""));
           if (data.chunk) {
-            assistantMessage += data.chunk
+            assistantMessage += data.chunk;
             setChatMessages((prev: { role: string; content: string }[]) => {
-              const updated = [...prev]
-              updated[updated.length - 1] = { role: "assistant", content: assistantMessage }
-              return updated
-            })
+              const updated = [...prev];
+              updated[updated.length - 1] = {
+                role: "assistant",
+                content: assistantMessage,
+              };
+              return updated;
+            });
           }
         }
       }
     } finally {
-      setChatLoading(false)
+      setChatLoading(false);
     }
   };
 
@@ -336,15 +344,21 @@ export default function DashboardPage() {
                 key={i}
                 className={`text-sm ${msg.role === "user" ? "text-right" : "text-left"}`}
               >
-                <span
+                <div
                   className={`inline-block px-3 py-2 rounded-lg max-w-[90%] ${
                     msg.role === "user"
                       ? "bg-emerald-500 text-white"
-                      : "bg-slate-100 text-slate-700"
+                      : "bg-slate-100 text-slate-700 prose prose-sm"
                   }`}
                 >
-                  {msg.content}
-                </span>
+                  {msg.role === "user" ? (
+                    msg.content
+                  ) : (
+                    <ReactMarkdown>
+                      {msg.content}
+                    </ReactMarkdown>
+                  )}
+                </div>
               </div>
             ))}
             {chatLoading && (
