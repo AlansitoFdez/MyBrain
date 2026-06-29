@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react"
 import { Note, Document } from "@/types";
 import { logout } from "@/lib/auth";
 import api from "@/lib/api";
@@ -22,6 +22,7 @@ export default function DashboardPage() {
   const [saved, setSaved] = useState(false);
   const [urlInput, setUrlInput] = useState("");
   const [showUrlInput, setShowUrlInput] = useState(false);
+  const chatBottomRef = useRef<HTMLDivElement>(null);
 
   const fetchNotes = async () => {
     const response = await api.get<Note[]>("/notes");
@@ -60,6 +61,10 @@ export default function DashboardPage() {
     fetchNotes();
     fetchDocuments();
   }, []);
+
+  useEffect(() => {
+    chatBottomRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [chatMessages])
 
   const createNote = async () => {
     const response = await api.post<Note>("/notes", {
@@ -368,6 +373,7 @@ export default function DashboardPage() {
                 </span>
               </div>
             )}
+            <div ref={chatBottomRef} />
           </div>
 
           <div className="p-3 border-t border-slate-200 flex gap-2">
