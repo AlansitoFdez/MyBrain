@@ -97,25 +97,55 @@ export default function DashboardPage() {
   };
 
   const sendMessage = async () => {
-    if (!chatInput.trim()) return;
-    const userMessage = chatInput;
-    setChatInput("");
-    setChatMessages((prev) => [
+    if (!chatInput.trim()) return
+    const userMessage = chatInput
+    setChatInput("")
+    setChatMessages((prev: { role: string; content: string }[]) => [
       ...prev,
       { role: "user", content: userMessage },
-    ]);
-    setChatLoading(true);
-
+    ])
+    setChatLoading(true)
+  
     try {
-      const response = await api.post<{ response: string }>("/chat", {
-        query: userMessage,
-      });
-      setChatMessages((prev) => [
+      const response = await fetch("http://localhost:8000/chat/stream", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ query: userMessage }),
+      })
+  
+      const reader = response.body!.getReader()
+      const decoder = new TextDecoder()
+      let assistantMessage = ""
+  
+      setChatMessages((prev: { role: string; content: string }[]) => [
         ...prev,
-        { role: "assistant", content: response.data.response },
-      ]);
+        { role: "assistant", content: "" },
+      ])
+  
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+  
+        const chunk = decoder.decode(value)
+        const lines = chunk.split("\n").filter(line => line.startsWith("data: "))
+  
+        for (const line of lines) {
+          const data = JSON.parse(line.replace("data: ", ""))
+          if (data.chunk) {
+            assistantMessage += data.chunk
+            setChatMessages((prev: { role: string; content: string }[]) => {
+              const updated = [...prev]
+              updated[updated.length - 1] = { role: "assistant", content: assistantMessage }
+              return updated
+            })
+          }
+        }
+      }
     } finally {
-      setChatLoading(false);
+      setChatLoading(false)
     }
   };
 
