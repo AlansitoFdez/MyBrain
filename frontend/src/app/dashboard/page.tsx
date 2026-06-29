@@ -295,9 +295,76 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* EDITOR */}
+      {/* PANEL CENTRAL */}
       <div className="flex-1 flex flex-col">
-        {selectedNote ? (
+        {chatOpen ? (
+          <>
+            <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+              <span className="font-medium text-slate-900">
+                Chat con MyBrain
+              </span>
+              <button
+                onClick={() => setChatOpen(false)}
+                className="text-slate-400 hover:text-slate-600 text-sm"
+              >
+                ✕ Cerrar chat
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              {chatMessages.length === 0 && (
+                <p className="text-slate-400 text-sm text-center mt-8">
+                  Pregúntame sobre tus notas y documentos
+                </p>
+              )}
+              {chatMessages.map((msg, i) => (
+                <div
+                  key={i}
+                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                >
+                  <div
+                    className={`px-4 py-3 rounded-xl max-w-[70%] text-sm ${
+                      msg.role === "user"
+                        ? "bg-emerald-500 text-white"
+                        : "bg-slate-100 text-slate-700 prose prose-sm"
+                    }`}
+                  >
+                    {msg.role === "user" ? (
+                      msg.content
+                    ) : (
+                      <ReactMarkdown>{msg.content}</ReactMarkdown>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {chatLoading && (
+                <div className="flex justify-start">
+                  <span className="px-4 py-3 rounded-xl bg-slate-100 text-slate-400 text-sm">
+                    Pensando...
+                  </span>
+                </div>
+              )}
+              <div ref={chatBottomRef} />
+            </div>
+
+            <div className="p-4 border-t border-slate-200 flex gap-3">
+              <input
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                className="flex-1 px-4 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                placeholder="Pregunta algo sobre tus notas..."
+              />
+              <button
+                onClick={sendMessage}
+                disabled={chatLoading}
+                className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white text-sm rounded-xl transition-colors"
+              >
+                Enviar
+              </button>
+            </div>
+          </>
+        ) : selectedNote ? (
           <>
             <div className="p-6 border-b border-slate-200 flex items-center justify-between">
               <input
@@ -349,76 +416,6 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
-
-      {/* CHAT PANEL */}
-      {chatOpen && (
-        <div className="w-80 bg-white border-l border-slate-200 flex flex-col">
-          <div className="p-4 border-b border-slate-200 flex items-center justify-between">
-            <span className="font-medium text-slate-900 text-sm">
-              Chat con MyBrain
-            </span>
-            <button
-              onClick={() => setChatOpen(false)}
-              className="text-slate-400 hover:text-slate-600"
-            >
-              ✕
-            </button>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {chatMessages.length === 0 && (
-              <p className="text-slate-400 text-xs text-center">
-                Pregúntame sobre tus notas
-              </p>
-            )}
-            {chatMessages.map((msg, i) => (
-              <div
-                key={i}
-                className={`text-sm ${msg.role === "user" ? "text-right" : "text-left"}`}
-              >
-                <div
-                  className={`inline-block px-3 py-2 rounded-lg max-w-[90%] ${
-                    msg.role === "user"
-                      ? "bg-emerald-500 text-white"
-                      : "bg-slate-100 text-slate-700 prose prose-sm"
-                  }`}
-                >
-                  {msg.role === "user" ? (
-                    msg.content
-                  ) : (
-                    <ReactMarkdown>{msg.content}</ReactMarkdown>
-                  )}
-                </div>
-              </div>
-            ))}
-            {chatLoading && (
-              <div className="text-left">
-                <span className="inline-block px-3 py-2 rounded-lg bg-slate-100 text-slate-400 text-sm">
-                  Pensando...
-                </span>
-              </div>
-            )}
-            <div ref={chatBottomRef} />
-          </div>
-
-          <div className="p-3 border-t border-slate-200 flex gap-2">
-            <input
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-              className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              placeholder="Pregunta algo..."
-            />
-            <button
-              onClick={sendMessage}
-              disabled={chatLoading}
-              className="px-3 py-2 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white text-sm rounded-lg transition-colors"
-            >
-              →
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
