@@ -60,6 +60,11 @@ export default function DashboardPage() {
     fetchDocuments();
   };
 
+  const deleteDocument = async (documentId: number) => {
+    await api.delete(`/documents/${documentId}`);
+    setDocuments(documents.filter((d) => d.id !== documentId));
+  };
+
   useEffect(() => {
     fetchNotes();
     fetchDocuments();
@@ -272,9 +277,17 @@ export default function DashboardPage() {
           {documents.map((doc) => (
             <div
               key={doc.id}
-              className="px-3 py-2 text-sm text-slate-500 truncate"
+              className="px-3 py-2 text-sm text-slate-500 flex items-center justify-between group"
             >
-              {doc.source_type === "pdf" ? "📄" : "🌐"} {doc.title}
+              <span className="truncate">
+                {doc.source_type === "pdf" ? "📄" : "🌐"} {doc.title}
+              </span>
+              <button
+                onClick={() => deleteDocument(doc.id)}
+                className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity text-xs ml-2"
+              >
+                ✕
+              </button>
             </div>
           ))}
         </div>

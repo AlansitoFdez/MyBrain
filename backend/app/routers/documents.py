@@ -89,3 +89,27 @@ def get_documents(
         Document.user_id == current_user.id
     ).all()
     return documents
+
+@router.delete("/{document_id}")
+def delete_document(
+    document_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    document = db.query(Document).filter(
+        Document.id == document_id,
+        Document.user_id == current_user.id
+    ).first()
+
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found"
+        )
+
+    db.delete(document)
+    db.commit()
+
+    vector_store.delete_note(document_id)
+
+    return {"message": "Document deleted successfully"}
