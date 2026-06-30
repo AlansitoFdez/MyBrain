@@ -103,7 +103,7 @@ export default function DashboardPage() {
 
   const createNote = async () => {
     try {
-      const response = await api.post<Note>("/notes", {
+      const response = await api.post<Note>("/notes/", {
         title: "Nueva nota",
         content: "",
       });
