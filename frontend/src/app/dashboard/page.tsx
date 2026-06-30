@@ -22,47 +22,74 @@ export default function DashboardPage() {
   const [saved, setSaved] = useState(false);
   const [urlInput, setUrlInput] = useState("");
   const [showUrlInput, setShowUrlInput] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const [autoSaveTimer, setAutoSaveTimer] = useState<ReturnType<
     typeof setTimeout
   > | null>(null);
 
+  const handleError = (error: unknown, fallback: string) => {
+    console.error(error);
+    setErrorMessage(fallback);
+    setTimeout(() => setErrorMessage(""), 4000);
+  };
+
   const fetchNotes = async () => {
-    const response = await api.get<Note[]>("/notes");
-    setNotes(response.data);
+    try {
+      const response = await api.get<Note[]>("/notes");
+      setNotes(response.data);
+    } catch (error) {
+      handleError(error, "No se pudieron cargar las notas");
+    }
   };
 
   const fetchDocuments = async () => {
-    const response = await api.get<Document[]>("/documents");
-    setDocuments(response.data);
+    try {
+      const response = await api.get<Document[]>("/documents");
+      setDocuments(response.data);
+    } catch (error) {
+      handleError(error, "No se pudieron cargar los documentos");
+    }
   };
 
   const uploadUrl = async () => {
     if (!urlInput.trim()) return;
-    const formData = new FormData();
-    formData.append("url", urlInput);
-    await api.post("/documents/url", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
-    setUrlInput("");
-    setShowUrlInput(false);
-    fetchDocuments();
+    try {
+      const formData = new FormData();
+      formData.append("url", urlInput);
+      await api.post("/documents/url", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setUrlInput("");
+      setShowUrlInput(false);
+      fetchDocuments();
+    } catch (error) {
+      handleError(error, "No se pudo procesar la URL");
+    }
   };
 
   const uploadPdf = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const formData = new FormData();
-    formData.append("file", file);
-    await api.post("/documents/pdf", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
-    fetchDocuments();
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      await api.post("/documents/pdf", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      fetchDocuments();
+    } catch (error) {
+      handleError(error, "No se pudo subir el PDF");
+    }
   };
 
   const deleteDocument = async (documentId: number) => {
-    await api.delete(`/documents/${documentId}`);
-    setDocuments(documents.filter((d) => d.id !== documentId));
+    try {
+      await api.delete(`/documents/${documentId}`);
+      setDocuments(documents.filter((d) => d.id !== documentId));
+    } catch (error) {
+      handleError(error, "No se pudo eliminar el documento");
+    }
   };
 
   useEffect(() => {
@@ -75,12 +102,16 @@ export default function DashboardPage() {
   }, [chatMessages]);
 
   const createNote = async () => {
-    const response = await api.post<Note>("/notes", {
-      title: "Nueva nota",
-      content: "",
-    });
-    setNotes([response.data, ...notes]);
-    selectNote(response.data);
+    try {
+      const response = await api.post<Note>("/notes", {
+        title: "Nueva nota",
+        content: "",
+      });
+      setNotes([response.data, ...notes]);
+      selectNote(response.data);
+    } catch (error) {
+      handleError(error, "No se pudo crear la nota");
+    }
   };
 
   const selectNote = (note: Note) => {
@@ -91,16 +122,23 @@ export default function DashboardPage() {
 
   const saveNote = async () => {
     if (!selectedNote) return;
-    setSaving(true);
-    const response = await api.put<Note>(`/notes/${selectedNote.id}`, {
-      title,
-      content,
-    });
-    setNotes(notes.map((n) => (n.id === selectedNote.id ? response.data : n)));
-    setSelectedNote(response.data);
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    try {
+      setSaving(true);
+      const response = await api.put<Note>(`/notes/${selectedNote.id}`, {
+        title,
+        content,
+      });
+      setNotes(
+        notes.map((n) => (n.id === selectedNote.id ? response.data : n)),
+      );
+      setSelectedNote(response.data);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (error) {
+      handleError(error, "No se pudo guardar la nota");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleContentChange = useCallback(
@@ -109,18 +147,23 @@ export default function DashboardPage() {
       if (autoSaveTimer) clearTimeout(autoSaveTimer);
       if (!selectedNote) return;
       const timer = setTimeout(async () => {
-        setSaving(true);
-        const response = await api.put<Note>(`/notes/${selectedNote.id}`, {
-          title,
-          content: value,
-        });
-        setNotes((prev) =>
-          prev.map((n) => (n.id === selectedNote.id ? response.data : n)),
-        );
-        setSelectedNote(response.data);
-        setSaving(false);
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
+        try {
+          setSaving(true);
+          const response = await api.put<Note>(`/notes/${selectedNote.id}`, {
+            title,
+            content: value,
+          });
+          setNotes((prev) =>
+            prev.map((n) => (n.id === selectedNote.id ? response.data : n)),
+          );
+          setSelectedNote(response.data);
+          setSaved(true);
+          setTimeout(() => setSaved(false), 2000);
+        } catch (error) {
+          handleError(error, "No se pudo guardar automáticamente");
+        } finally {
+          setSaving(false);
+        }
       }, 1500);
       setAutoSaveTimer(timer);
     },
@@ -129,11 +172,15 @@ export default function DashboardPage() {
 
   const deleteNote = async () => {
     if (!selectedNote) return;
-    await api.delete(`/notes/${selectedNote.id}`);
-    setNotes(notes.filter((n) => n.id !== selectedNote.id));
-    setSelectedNote(null);
-    setTitle("");
-    setContent("");
+    try {
+      await api.delete(`/notes/${selectedNote.id}`);
+      setNotes(notes.filter((n) => n.id !== selectedNote.id));
+      setSelectedNote(null);
+      setTitle("");
+      setContent("");
+    } catch (error) {
+      handleError(error, "No se pudo eliminar la nota");
+    }
   };
 
   const sendMessage = async () => {
@@ -155,6 +202,8 @@ export default function DashboardPage() {
         credentials: "include",
         body: JSON.stringify({ query: userMessage }),
       });
+
+      if (!response.ok) throw new Error("Chat request failed");
 
       const reader = response.body!.getReader();
       const decoder = new TextDecoder();
@@ -189,6 +238,8 @@ export default function DashboardPage() {
           }
         }
       }
+    } catch (error) {
+      handleError(error, "No se pudo conectar con el chat");
     } finally {
       setChatLoading(false);
     }
@@ -429,6 +480,12 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {errorMessage && (
+        <div className="fixed bottom-4 right-4 bg-red-500 text-white px-4 py-3 rounded-lg shadow-lg text-sm z-50">
+          {errorMessage}
+        </div>
+      )}
     </div>
   );
 }
