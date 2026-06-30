@@ -42,7 +42,7 @@ async def upload_pdf(
     db.commit()
     db.refresh(document)
 
-    vector_store.add_note(document.id, text, current_user.id)
+    vector_store.add_note(db, document.id, text, current_user.id)
 
     return document
 
@@ -76,7 +76,7 @@ async def upload_url(
     db.commit()
     db.refresh(document)
 
-    vector_store.add_note(document.id, text, current_user.id)
+    vector_store.add_note(db, document.id, text, current_user.id)
 
     return document
 
@@ -110,6 +110,6 @@ def delete_document(
     db.delete(document)
     db.commit()
 
-    vector_store.delete_note(document_id)
+    vector_store.delete_note(db, document_id)
 
     return {"message": "Document deleted successfully"}

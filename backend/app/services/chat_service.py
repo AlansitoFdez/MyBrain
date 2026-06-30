@@ -5,8 +5,8 @@ from typing import Generator
 
 client = Groq(api_key=settings.GROQ_API_KEY)
 
-def build_system_prompt(query: str, user_id: int) -> str:
-    relevant_notes = search_notes(query, user_id)
+def build_system_prompt(query: str, user_id: int, db) -> str:
+    relevant_notes = search_notes(db, query, user_id)
 
     if relevant_notes:
         context = "\n\n".join(relevant_notes)
@@ -21,8 +21,8 @@ Responde basándote en el contenido de esas notas. Si la información no está e
 El usuario no tiene notas relevantes para esta pregunta.
 Responde de forma general e indícale que puede añadir notas sobre este tema."""
 
-def chat_with_notes(query: str, user_id: int) -> str:
-    system_prompt = build_system_prompt(query, user_id)
+def chat_with_notes(query: str, user_id: int, db) -> str:
+    system_prompt = build_system_prompt(query, user_id, db)
 
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
@@ -34,8 +34,8 @@ def chat_with_notes(query: str, user_id: int) -> str:
 
     return response.choices[0].message.content
 
-def chat_with_notes_stream(query: str, user_id: int) -> Generator[str, None, None]:
-    system_prompt = build_system_prompt(query, user_id)
+def chat_with_notes_stream(query: str, user_id: int, db) -> Generator[str, None, None]:
+    system_prompt = build_system_prompt(query, user_id, db)
 
     stream = client.chat.completions.create(
         model="llama-3.3-70b-versatile",

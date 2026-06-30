@@ -34,7 +34,7 @@ def create_note(
     db.refresh(new_note)
 
     text = f"{new_note.title} {new_note.content or ''}"
-    vector_store.add_note(new_note.id, text, current_user.id)
+    vector_store.add_note(db, new_note.id, text, current_user.id)
 
     return new_note
 
@@ -62,7 +62,7 @@ def update_note(
     db.refresh(note)
 
     text = f"{note.title} {note.content or ''}"
-    vector_store.add_note(note.id, text, current_user.id)
+    vector_store.add_note(db, note.id, text, current_user.id)
 
     return note
 
@@ -83,6 +83,6 @@ def delete_note(
     db.delete(note)
     db.commit()
 
-    vector_store.delete_note(note_id)
+    vector_store.delete_note(db, note_id)
 
     return {"message": "Note deleted successfully"}
