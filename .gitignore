@@ -148,3 +148,6 @@ __pycache__/
 *.pyo
 venv/
 .env
+
+# Tests
+test.db
