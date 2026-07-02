@@ -27,6 +27,7 @@ export default function DashboardPage() {
   const [autoSaveTimer, setAutoSaveTimer] = useState<ReturnType<
     typeof setTimeout
   > | null>(null);
+  const [loadingNotes, setLoadingNotes] = useState(true);
 
   const handleError = (error: unknown, fallback: string) => {
     console.error(error);
@@ -40,6 +41,8 @@ export default function DashboardPage() {
       setNotes(response.data);
     } catch (error) {
       handleError(error, "No se pudieron cargar las notas");
+    } finally {
+      setLoadingNotes(false);
     }
   };
 
@@ -275,19 +278,30 @@ export default function DashboardPage() {
             </button>
           </div>
 
-          {notes.map((note) => (
-            <button
-              key={note.id}
-              onClick={() => selectNote(note)}
-              className={`w-full text-left px-3 py-2 rounded-lg text-sm mb-1 transition-colors ${
-                selectedNote?.id === note.id
-                  ? "bg-emerald-50 text-emerald-700"
-                  : "text-slate-600 hover:bg-slate-50"
-              }`}
-            >
-              {note.title}
-            </button>
-          ))}
+          {loadingNotes ? (
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="h-8 bg-slate-100 rounded-lg animate-pulse"
+                />
+              ))}
+            </div>
+          ) : (
+            notes.map((note) => (
+              <button
+                key={note.id}
+                onClick={() => selectNote(note)}
+                className={`w-full text-left px-3 py-2 rounded-lg text-sm mb-1 transition-colors ${
+                  selectedNote?.id === note.id
+                    ? "bg-emerald-50 text-emerald-700"
+                    : "text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                {note.title}
+              </button>
+            ))
+          )}
 
           <div className="mt-4 mb-2 flex items-center justify-between">
             <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">
