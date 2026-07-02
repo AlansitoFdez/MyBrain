@@ -250,7 +250,16 @@ export default function DashboardPage() {
       {/* SIDEBAR */}
       <div className="w-64 bg-white border-r border-slate-200 flex flex-col">
         <div className="p-4 border-b border-slate-200">
-          <h1 className="font-semibold text-slate-900">MyBrain</h1>
+          <h1
+            onClick={() => {
+              setSelectedNote(null);
+              setTitle("");
+              setContent("");
+            }}
+            className="font-semibold text-slate-900 cursor-pointer hover:text-emerald-600 transition-colors"
+          >
+            MyBrain
+          </h1>
         </div>
 
         <div className="flex-1 overflow-y-auto p-3">
@@ -345,7 +354,10 @@ export default function DashboardPage() {
 
         <div className="p-3 border-t border-slate-200 space-y-1">
           <button
-            onClick={() => setChatOpen(!chatOpen)}
+            onClick={() => {
+              setChatMessages([]);
+              setChatOpen(!chatOpen);
+            }}
             className="w-full text-left px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
           >
             💬 Chat con MyBrain
