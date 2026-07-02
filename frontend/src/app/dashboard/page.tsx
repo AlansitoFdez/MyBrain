@@ -28,6 +28,7 @@ export default function DashboardPage() {
     typeof setTimeout
   > | null>(null);
   const [loadingNotes, setLoadingNotes] = useState(true);
+  const [loadingDocuments, setLoadingDocuments] = useState(true);
 
   const handleError = (error: unknown, fallback: string) => {
     console.error(error);
@@ -52,6 +53,8 @@ export default function DashboardPage() {
       setDocuments(response.data);
     } catch (error) {
       handleError(error, "No se pudieron cargar los documentos");
+    } finally {
+      setLoadingDocuments(false);
     }
   };
 
@@ -348,22 +351,33 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {documents.map((doc) => (
-            <div
-              key={doc.id}
-              className="px-3 py-2 text-sm text-slate-500 flex items-center justify-between group"
-            >
-              <span className="truncate">
-                {doc.source_type === "pdf" ? "📄" : "🌐"} {doc.title}
-              </span>
-              <button
-                onClick={() => deleteDocument(doc.id)}
-                className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity text-xs ml-2"
-              >
-                ✕
-              </button>
+          {loadingDocuments ? (
+            <div className="space-y-2 mt-1">
+              {[1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="h-8 bg-slate-100 rounded-lg animate-pulse"
+                />
+              ))}
             </div>
-          ))}
+          ) : (
+            documents.map((doc) => (
+              <div
+                key={doc.id}
+                className="px-3 py-2 text-sm text-slate-500 flex items-center justify-between group"
+              >
+                <span className="truncate">
+                  {doc.source_type === "pdf" ? "📄" : "🌐"} {doc.title}
+                </span>
+                <button
+                  onClick={() => deleteDocument(doc.id)}
+                  className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity text-xs ml-2"
+                >
+                  ✕
+                </button>
+              </div>
+            ))
+          )}
         </div>
 
         <div className="p-3 border-t border-slate-200 space-y-1">
